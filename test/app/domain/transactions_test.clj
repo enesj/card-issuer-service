@@ -32,6 +32,9 @@
 (defn transfer [amount currency-code user-email receiver-email]
   (add-transaction amount currency-code user-email "transfer" receiver-email))
 
+(defn broken [amount currency-code user-email]
+  (add-transaction amount currency-code user-email "broken"))
+
 (defn user-emails []
   (->> (users/get-all-users)
        (mapv :users/email)))
@@ -58,12 +61,18 @@
       ;transaction is rolled back if insufficient funds, so balance should be the same as before transaction call.
       (is (= (:balance (transactions/get-balance db/datasource user-email "EUR"))
             100.00M))
-      ;check the number of notifications sent in the test
+      ;check the number of notifications sent in the test is equal to the number of all transactions: both successful and failed
       (is (= (count-notifications) 6)))))
 
+(deftest broken-connection-in-transaction-test
+  (is (= (:balance (transactions/get-balance db/datasource "john.smit@gmail.com" "USD")) 100.00M))
+  (is (= (broken 10 "EUR" "john.smit@gmail.com")
+        {:is-authorised false
+         :description "FATAL: database \"db_test\" is not currently accepting connections"}))
+  (is (= (:balance (transactions/get-balance db/datasource "john.smit@gmail.com" "USD")) 100.00M))
+  (is (= (count-notifications) 1)))
 
 (deftest transfer-test
-
   (let [sender-email (first (user-emails))
         receiver-email (second (user-emails))]
     (testing "test transfer of different currencies and amounts between users"
@@ -89,7 +98,7 @@
       ;transaction is rolled back if insufficient funds, so sender and receiver balances should be the same as before transaction call.
       (is (=  (:balance (transactions/get-balance db/datasource sender-email "EUR")) 50.00M))
       (is (=  (:balance (transactions/get-balance db/datasource receiver-email "EUR")) 150.00M))
-      ;check the number of notifications sent in the test
+      ;check the number of notifications sent in the test is equal to the number of all transactions: both successful and failed
       (is (= (count-notifications) 6)))))
 
 (comment

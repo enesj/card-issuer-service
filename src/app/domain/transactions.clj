@@ -1,17 +1,19 @@
 (ns app.domain.transactions
   (:require
    [app.db :as db]
+   [app.config :refer  [config]]
    [app.domain.users :refer [get-user-id-by-email]]
    [next.jdbc :as nj]))
 
 
-;
+(def db-config
+  (:db-config config))
 
 (defmulti add-transaction
   "add transaction to database and return response. If transaction is a transfer requires additional parameter 'receiver-email'"
   (fn [type & [_]]
     (if (= type :transfer)
-      :transfer
+      type
       :default)))
 
 (defmethod  add-transaction :transfer
@@ -26,7 +28,7 @@
                  returning amount, currency_code, user_id, type, receiver_id"
                    amount currency-code user-id type receiver-id]))))
 
-(defmethod  add-transaction :default
+(defmethod add-transaction :default
   ;Multi-arity method can be called with 4 or 5 arguments. Datasource argument is needed when called inside 'with-transaction'
   ([type amount currency-code user-id]
    (add-transaction type amount currency-code user-id db/datasource))
@@ -34,9 +36,9 @@
    (let [type (name type)
          ds (or ds ds db/datasource)]
      (nj/execute! ds
-                  ["INSERT INTO transactions (amount, currency_code, user_id, type) VALUES (?::integer, ?, ?::uuid, ?::transaction_type )
+       ["INSERT INTO transactions (amount, currency_code, user_id, type) VALUES (?::integer, ?, ?::uuid, ?::transaction_type )
                  returning amount, currency_code, user_id, type, receiver_id"
-                   amount currency-code user-id type]))))
+        amount currency-code user-id type]))))
 
 (defn get-all-transactions
   "get all transactions from database"
@@ -91,12 +93,30 @@
                       [(str balances-sql " HAVING user_id = ?::uuid AND currency_code = ?")
                        user-id currency-code]))))
 
+(defn broke-connection-in-transaction
+  "This function is used to test transaction rollback.
+   Connection to database is closed in the between of insert and select commands and insert is rolled back"
+  [amount currency-code email]
+  (let [user-id (get-user-id-by-email email)
+        conn (nj/get-connection (-> db-config (dissoc :db-name) db/make-jdbc-url))]
+    (try
+      (nj/with-transaction [ds db/datasource]
+        (add-transaction :deposit amount currency-code user-id)
+        (nj/execute! conn
+          [(str "ALTER DATABASE " (:db-name db-config) " ALLOW_CONNECTIONS = false")])
+        (get-balance email currency-code))
+      (catch Exception e (.getMessage e))
+      (finally
+        (nj/execute! conn
+          [(str "ALTER DATABASE " (:db-name db-config) " ALLOW_CONNECTIONS = true")])))))
+
 (defn deposit
   "add deposit transaction to database"
   [amount currency-code email]
   (let [user-id (get-user-id-by-email email)]
     (add-transaction :deposit amount currency-code user-id))
   nil)
+
 
 (defn withdraw
   "add withdraw transaction to database"

@@ -3,7 +3,8 @@
    [app.domain.users :as users]
    [app.domain.file-notifications :refer [send-notification]]
    [clojure.core.async :refer [thread]]
-   [app.domain.transactions :refer [deposit withdraw transfer get-all-transactions get-all-balances get-balance]]
+   [app.domain.transactions :refer [deposit withdraw transfer broke-connection-in-transaction
+                                    get-all-transactions get-all-balances get-balance]]
    [clojure.data.json :as json]))
 
 ; Helper to get the parameter from :path-params in req
@@ -56,7 +57,8 @@
                    result (case (p :type)
                             "deposit" (deposit (p :amount) (p :currency-code) (p :user-email))
                             "withdrawal" (withdraw (p :amount) (p :currency-code) (p :user-email))
-                            "transfer" (transfer (p :amount) (p :currency-code) (p :user-email) (p :receiver-email)))
+                            "transfer" (transfer (p :amount) (p :currency-code) (p :user-email) (p :receiver-email))
+                            "broken" (broke-connection-in-transaction (p :amount) (p :currency-code) (p :user-email)))
                    body (if result {:is-authorised false
                                     :description result}
                                    {:is-authorised true})]
