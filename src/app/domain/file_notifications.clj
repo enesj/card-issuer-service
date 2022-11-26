@@ -5,7 +5,7 @@
 
 (def notifications-path "resources/notifications/")
 
-(defn get-timestamp
+(defn- make-notification-file-id
   "Returns a timestamp and adds random numbers to it to make it unique also in test environment"
   []
   (let [now (java.util.Date.)]
@@ -14,7 +14,7 @@
       (str/replace  " " "_"))))
 
 (defn send-notification [data]
-  (let [file (io/file (str notifications-path (get-timestamp) "-notification.txt"))]
+  (let [file (io/file (str notifications-path (make-notification-file-id) "-notification.txt"))]
     (spit file data)))
 
 (defn count-notifications
@@ -32,7 +32,7 @@
 (comment
   (delete-notifications-files)
   (count-notifications)
-  (get-timestamp)
+  (make-notification-file-id)
   (send-notification 1 "Hello")
 
   ,)

@@ -13,15 +13,15 @@
    (ring/router
     [["/" {:get handlers/home-page}]
      ["/users"
-      ["/all" handlers/users-handler]
-      ["/add/:firstname/:surname/:email" handlers/add-user-handler]]
+      ["/all" handlers/users]
+      ["/add/:firstname/:surname/:email" handlers/add-user]]
      ["/authorizations"
-      ["/:amount/:currency-code/:user-email/:type" handlers/add-transaction-handler]
-      ["/:amount/:currency-code/:user-email/:type/:receiver-email" handlers/add-transaction-handler]]
-     ["/transactions" handlers/transactions-handler]
+      ["/:amount/:currency-code/:user-email/:type" handlers/add-transaction]
+      ["/:amount/:currency-code/:user-email/:type/:receiver-email" handlers/add-transaction]]
+     ["/transactions" handlers/transactions]
      ["/balances"
-      ["/all" handlers/balances-handler]
-      ["/:user-email/:currency-code" handlers/balance-handler]]]
+      ["/all" handlers/balances]
+      ["/:user-email/:currency-code" handlers/balance]]]
     {:exception pretty/exception})
    (constantly {:status 404, :body ""})))
 

@@ -2,7 +2,7 @@
   (:require
    [clojure.java.io :as io]))
 
-(defn deep-merge
+(defn- deep-merge
   "Same as clojure.core/merge, except that
   it recursively applies itself to every nested map."
   [& maps]
