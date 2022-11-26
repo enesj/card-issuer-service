@@ -2,7 +2,7 @@
   (:require
    [app.domain.users :refer [add-user get-all-users]]
    [app.domain.file-notifications :refer [send-notification]]
-   [clojure.core.async :refer [go]]
+   [clojure.core.async :refer [thread]]
    [app.domain.transactions :refer [deposit withdraw transfer get-all-transactions get-all-balances get-balance]]
    [clojure.data.json :as json]))
 
@@ -45,19 +45,6 @@
    :headers {"Content-Type" "text/json"}
    :body (json/write-str (get-all-transactions))})
 
-(defn response-body
-  "Returns a response body and sends a notification.
-   The notification is sent in a separate thread to prevent delays in response."
-  [result data]
-  (if result
-    (let [body {:is-authorised false
-                :description result}]
-      (go (send-notification (merge data body)))
-      body)
-    (let [body {:is-authorised true}]
-      (go (send-notification (merge data body)))
-      body)))
-
 (defn add-transaction-handler
   "Call corresponding function based on type argument.
    All functions returns nil if successful and an error message if not"
@@ -65,15 +52,18 @@
   {:status 200
    :headers {"Content-Type" "text/json"}
    :body (-> (let [p (partial get-parameter req)
-                   data (:path-params req)]
-               (json/write-str
-                 (case (p :type)
-                   "deposit" (let [result (deposit (p :amount) (p :currency-code) (p :user-email))]
-                               (response-body result data))
-                   "withdrawal" (let [result (withdraw (p :amount) (p :currency-code) (p :user-email))]
-                                  (response-body result data))
-                   "transfer" (let [result (transfer (p :amount) (p :currency-code) (p :user-email) (p :receiver-email))]
-                                (response-body result data))))))})
+                   data (:path-params req)
+                   result (case (p :type)
+                            "deposit" (deposit (p :amount) (p :currency-code) (p :user-email))
+                            "withdrawal" (withdraw (p :amount) (p :currency-code) (p :user-email))
+                            "transfer" (transfer (p :amount) (p :currency-code) (p :user-email) (p :receiver-email)))
+                   body (if result {:is-authorised false
+                                    :description result}
+                                   {:is-authorised true})]
+               (thread (send-notification (merge data body)))
+               (json/write-str body)))})
+
+
 
 ; Balances
 ;====================================================================================================
