@@ -1,0 +1,16 @@
+{:logging {:min-level :debug
+           :ns-filter {:allow #{"*"}}}
+
+ :db-config {:port 5434
+             :host "localhost"
+             :password "postgres"
+             :user "postgres"}
+
+ :migratus {:init-in-transaction? true
+            :store :database}
+
+ :seeds {:migration-dir "seeds"
+         :migration-table-name "seeds"}
+
+ :migrations {:migration-dir "migrations"
+              :migration-table-name "migrations"}}

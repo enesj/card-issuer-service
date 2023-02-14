@@ -1,0 +1,20 @@
+{:paths                                 ["src" "test"]
+ :remove-surrounding-whitespace?        true
+ :remove-trailing-whitespace?           true
+ :remove-consecutive-blank-lines?       true
+ :insert-missing-whitespace?            true
+ :split-keypairs-over-multiple-lines?   false
+ :align-associative?                    false
+ :remove-multiple-non-indenting-spaces? false
+ :indents                               {do [[:block 0]]}}
+
+{:cljfmt-config-path "cljfmt.edn"
+ :auto-add-ns-to-new-files? true
+ :clean {:automatically-after-ns-refactor true
+         :ns-inner-blocks-indentation :next-line
+         :ns-import-classes-indentation :next-line
+         :sort {:ns true
+                :require true
+                :import true
+                :import-classes {:classes-per-line 3} ;; -1 for all in single line
+                :refer {:max-line-length 80}}}}

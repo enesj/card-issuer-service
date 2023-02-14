@@ -1,0 +1,10 @@
+{:cljfmt-config-path "cljfmt.edn"
+ :auto-add-ns-to-new-files? true
+ :clean {:automatically-after-ns-refactor true
+         :ns-inner-blocks-indentation :next-line
+         :ns-import-classes-indentation :next-line
+         :sort {:ns true
+                :require true
+                :import true
+                :import-classes {:classes-per-line 3} ;; -1 for all in single line
+                :refer {:max-line-length 80}}}}
